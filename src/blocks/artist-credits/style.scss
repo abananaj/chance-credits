@@ -1,0 +1,43 @@
+.wp-block-chance-artist-credits {
+  margin: 0;
+
+}
+
+.artist-credits-ul {
+  list-style: none;
+  padding-left: 0;
+
+  .credit {
+    margin-bottom: 0.5em;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  a {
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    .title {
+      font-weight: bold;
+      font-family: "gabarito", sans-serif;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .role {
+      font-style: italic;
+      text-transform: capitalize;
+    }
+
+    .date {
+      text-transform: uppercase;
+      font-size: 0.85em;
+    }
+  }
+}
