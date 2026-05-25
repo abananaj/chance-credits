@@ -22,7 +22,8 @@
 		width: 100px;
 		height: 100px;
 		object-fit: cover;
-		border-radius: 8px;
+		border-radius: var(--wp--preset--border-radius--small);
+		box-shadow: var(--wp--preset--shadow--button);
 		flex-shrink: 0;
 	}
 
