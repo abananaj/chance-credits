@@ -29,7 +29,7 @@ add_action('acf/include_fields', function () {
             'label' => 'Artist',
             'name' => 'artist',
             'type' => 'post_object',
-            'post_type' => array('ct-artist'),
+            'post_type' => array('artist'),
             'return_format' => 'id',
             'multiple' => 0,
             'ui' => 1,
@@ -82,7 +82,7 @@ add_action('acf/include_fields', function () {
             'label' => 'Credit ID',
             'name' => 'credit_id',
             'type' => 'text',
-              'readonly' => true,
+            'readonly' => true,
             'disabled' => true,
             'wrapper' => array(
               'width' => '10',
@@ -96,7 +96,7 @@ add_action('acf/include_fields', function () {
         array(
           'param' => 'post_type',
           'operator' => '==',
-          'value' => 'ct-production',
+          'value' => 'production',
         ),
       ),
     ),

@@ -36,7 +36,7 @@ function chance_credits_get_artist_credits_callback($request)
   $post_id = intval($request['post_id']);
 
   $args = array(
-    'post_type'      => 'ct-credit',
+    'post_type'      => 'credit',
     'posts_per_page' => -1,
     'meta_query'     => array(
       array('key' => 'artist', 'value' => $post_id, 'compare' => '='),
@@ -91,7 +91,7 @@ function chance_credits_get_production_credits_callback($request)
   $post_id = intval($request['post_id']);
 
   $args = array(
-    'post_type'      => 'ct-credit',
+    'post_type'      => 'credit',
     'posts_per_page' => -1,
     'meta_query'     => array(
       array('key' => 'production', 'value' => $post_id, 'compare' => '='),

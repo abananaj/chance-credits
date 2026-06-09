@@ -17,23 +17,23 @@ Custom credit management system for Chance Theater production website.
 
 ## Custom Post Types
 
-- **ct-production**: Productions/shows
-- **ct-artist**: Artist profiles
-- **ct-credit**: Junction post type (created automatically via auto-sync)
+- **production**: Productions/shows
+- **artist**: Artist profiles
+- **credit**: Junction post type (created automatically via auto-sync)
 
 ## ACF Integration
 
 ### Field Group: Cast & Crew
 
-Applied to: `ct-production` posts
+Applied to: `production` posts
 
 **Repeater Field: `production_credits_repeater`**
 
-- `artist` (Post Object) - Link to ct-artist
+- `artist` (Post Object) - Link to artist
 - `role-group` (Select) - playwright, actor, director, choreographer, designer, producer, other
 - `role` (Text) - Specific role (e.g., "Hamlet", "Stage Manager")
 
-When you save, a `ct-credit` post is automatically created with these meta fields:
+When you save, a `credit` post is automatically created with these meta fields:
 
 - `production` (post ID)
 - `artist` (post ID)
@@ -120,7 +120,7 @@ chance-credits/
 
 1. **Edit Production**: Go to Production page → Edit "Cast & Crew" repeater
 2. **Save Production**: ACF save hook fires `sync_repeater_to_credits()`
-3. **Auto-create Credits**: `ct-credit` posts created/updated with repeater data
+3. **Auto-create Credits**: `credit` posts created/updated with repeater data
 4. **Display on Frontend**: Use blocks or query functions to display
 
 ## Future Extensions
@@ -142,7 +142,7 @@ Possible additions:
 
 - WordPress 5.0+
 - ACF Pro (for Repeater field type)
-- Custom post types: ct-artist, ct-production (must exist before plugin activation)
+- Custom post types: artist, production (must exist before plugin activation)
 
 ## Notes
 

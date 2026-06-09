@@ -38,9 +38,9 @@ if (!$post_id) {
   return;
 }
 
-// Query for ct-credit posts where meta field 'artist' = current post ID
+// Query for credit posts where meta field 'artist' = current post ID
 $args = array(
-  'post_type' => 'ct-credit',
+  'post_type' => 'credit',
   'posts_per_page' => -1,
   'meta_query' => array(
     array(

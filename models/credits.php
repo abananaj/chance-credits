@@ -3,7 +3,7 @@
 /**
  * Production Credits Model
  * 
- * Handles all credit-related queries for ct-credit posts
+ * Handles all credit-related queries for credit posts
  */
 
 /**
@@ -43,7 +43,7 @@ function get_production_credits($production_id, $args = array())
   }
 
   $query_args = array(
-    'post_type'      => 'ct-credit',
+    'post_type'      => 'credit',
     'posts_per_page' => $args['per_page'],
     'meta_query'     => $meta_query,
     'order'          => $args['order'],
@@ -98,7 +98,7 @@ function get_artist_productions($artist_id, $args = array())
   }
 
   $query_args = array(
-    'post_type'      => 'ct-credit',
+    'post_type'      => 'credit',
     'posts_per_page' => $args['per_page'],
     'meta_query'     => $meta_query,
     'order'          => $args['order'],
@@ -117,7 +117,7 @@ function get_artist_productions($artist_id, $args = array())
 }
 
 /**
- * Sync production repeater to ct-credit posts
+ * Sync production repeater to credit posts
  */
 function sync_repeater_to_credits($production_id)
 {
@@ -131,7 +131,7 @@ function sync_repeater_to_credits($production_id)
   // Get production opening date
   $opening_date = get_field('opening', $production_id);
 
-  // Get existing ct-credit posts
+  // Get existing credit posts
   $existing_credits = get_production_credits($production_id, array('per_page' => -1));
   $existing_credit_ids = wp_list_pluck($existing_credits->posts, 'ID');
 
@@ -180,14 +180,14 @@ function sync_repeater_to_credits($production_id)
       wp_update_post(array(
         'ID'           => $credit_id,
         'post_title'   => $credit_title,
-        'post_type'    => 'ct-credit',
+        'post_type'    => 'credit',
         'post_status'  => 'publish',
       ));
     } else {
       // Create new
       $credit_id = wp_insert_post(array(
         'post_title'   => $credit_title,
-        'post_type'    => 'ct-credit',
+        'post_type'    => 'credit',
         'post_status'  => 'publish',
         'post_author'  => get_current_user_id(),
       ));
@@ -251,7 +251,7 @@ function sync_repeater_to_credits($production_id)
 
 // Hook to sync when Production is saved
 add_action('acf/save_post', function ($post_id) {
-  if ('ct-production' === get_post_type($post_id)) {
+  if ('production' === get_post_type($post_id)) {
     sync_repeater_to_credits($post_id);
   }
 }, 20);
@@ -334,7 +334,7 @@ function get_artist_productions_with_dates($artist_id)
 function count_artist_productions($artist_id)
 {
   $query = new \WP_Query(array(
-    'post_type'      => 'ct-credit',
+    'post_type'      => 'credit',
     'posts_per_page' => -1,
     'fields'         => 'ids',
     'meta_query'     => array(

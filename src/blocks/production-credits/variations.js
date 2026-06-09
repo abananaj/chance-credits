@@ -3,7 +3,7 @@ import { __ } from '@wordpress/i18n';
 /**
  * Block variations for Production Credits.
  *
- * Default (no variation): all ct-credits for the production.
+ * Default (no variation): all credits for the production.
  * team:    credits with role-group = playwright | director | choreographer | designer | stage_management | other
  * cast:    credits with role-group = actor
  * partner: credits with role-group = producer
