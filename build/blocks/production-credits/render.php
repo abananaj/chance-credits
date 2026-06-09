@@ -5,8 +5,8 @@
  *
  * Displays the ct-artists credited for the current ct-production.
  * Filters by role-group based on the `roleGroup` attribute:
- *   - "all"     → all ct-credits (default)
- *   - "team"    → all ct-credits excluding actor and producer
+ *   - "all"     → all credits (default)
+ *   - "team"    → all credits excluding actor and producer
  *   - "cast"    → actor
  *   - "partner" → producer
  */
@@ -50,7 +50,7 @@ if ('team' === $role_group) {
 }
 
 $args = array(
-  'post_type'      => 'ct-credit',
+  'post_type'      => 'credit',
   'posts_per_page' => -1,
   'meta_query'     => $meta_query,
   'orderby'        => 'menu_order title',
