@@ -57,7 +57,7 @@ if (!$query->have_posts()) {
   return;
 }
 
-$html = '<ul class="artist-credits-ul">';
+$items = [];
 
 while ($query->have_posts()) {
   $query->the_post();
@@ -65,32 +65,40 @@ while ($query->have_posts()) {
   $production_id = get_post_meta($credit_id, 'production', true);
   $role = get_post_meta($credit_id, 'role', true);
 
-  if ($production_id) {
-    $production_title = get_the_title($production_id);
-    $production_url = get_permalink($production_id);
-
-    $html .= '<li class="credit"><a href="' . esc_url($production_url) . '"><p class="title">' . esc_html($production_title) . '</p></a>';
-
-    // Display role, or fallback to role-group if role is blank
-    $display_role = $role;
-    if (empty($display_role)) {
-      $display_role = get_post_meta($credit_id, 'role-group', true);
-    }
-    if (!empty($display_role)) {
-      $html .= '<p><span class="role">' . esc_html($display_role) . '</span>, ';
-    }
-
-    // Display year from season taxonomy
-    $year = get_season_year($credit_id);
-    if (!empty($year)) {
-      $html .= ' <span class="date">' . esc_html($year) . '</span></p>';
-    }
-    $html .= '</li>';
+  if (!$production_id) {
+    continue;
   }
-}
 
-$html .= '</ul>';
+  $production_title = get_the_title($production_id);
+  $production_url = get_permalink($production_id);
+
+  $item = '<li class="credit"><a href="' . esc_url($production_url) . '"><span class="title">' . esc_html($production_title) . '</span></a>';
+
+  // Display role, or fallback to role-group if role is blank
+  $display_role = $role;
+  if (empty($display_role)) {
+    $display_role = get_post_meta($credit_id, 'role-group', true);
+  }
+
+  // Display year from season taxonomy, fallback to production post
+  $year = get_season_year($credit_id);
+  if (empty($year)) {
+    $year = get_season_year($production_id);
+  }
+
+  $parts = [];
+  if (!empty($display_role)) $parts[] = '<span class="role">' . esc_html($display_role) . '</span>';
+  if (!empty($year))         $parts[] = '<span class="date">' . esc_html($year) . '</span>';
+  if (!empty($parts)) $item .= '<p>' . implode(', ', $parts) . '</p>';
+
+  $item .= '</li>';
+  $items[] = $item;
+}
 
 wp_reset_postdata();
 
-echo $html;
+if (empty($items)) {
+  return;
+}
+
+echo '<ul class="artist-credits-ul">' . implode('', $items) . '</ul>';

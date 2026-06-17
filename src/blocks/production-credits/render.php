@@ -81,7 +81,10 @@ while ($query->have_posts()) {
     }
 
     $html .= '<li class="credit">';
-    $html .= '<img src="' . esc_url(get_the_post_thumbnail_url($artist_id)) . '" alt="' . esc_attr($artist_title) . '" class="artist-headshot"/>';
+    $thumbnail_url = get_the_post_thumbnail_url($artist_id);
+    if ($thumbnail_url) {
+      $html .= '<img src="' . esc_url($thumbnail_url) . '" alt="' . esc_attr($artist_title) . '" class="artist-headshot"/>';
+    }
     $html .= '<p class="artist"><a href="' . esc_url($artist_url) . '">' . esc_html($artist_title) . '</a></p>';
 
     if (! empty($display_role)) {
