@@ -151,3 +151,16 @@ Possible additions:
 - Auto-sync prevents orphaned credits when repeater rows are deleted
 - Credits are deleted permanently if removed from repeater
 
+# CUSTOM SQL TABLE REFACTORING
+Move this credit data to a custom table called `ct_credits`. All existing meta fields should be stored as columns instead. For example, columns could be:
+  - `credit_ID` (primary key, auto-increment)
+  - `credit_title` (Artist Name/Production Name, auto-generated from the title of the artist and production, with a "/" separator, e.g. "Hamlet/John Doe")
+  - `credit_name` (sanitized title, may not be necessary because credits are not shown on the front end as individual posts, but it may be useful for debugging and data management)
+  - `credit_artist` (artist ID, from the post_ID of the selected artist in the repeater)
+  - `credit_production` (production ID, auto add production ID from which the credit is created)
+  - `credit_role` (string, input by user in repeater)
+  - `credit_role_group` (string, input by user in repeater)
+  - `credit_opening` (date, equal to production opening meta value)
+  - `credit_order` (number, may not be necessary if production can have a field that is an array of credit_IDs that dictates the order in which they appear. The user should be able to easily change this order using the repeater field. Order is not needed for querying from artist block, those should be ordered by production opening date instead)
+
+This will improve query performance and simplify data management. The plugin should be refactored to use this custom table instead of post meta for credits. The auto-sync function will need to be updated to insert/update/delete rows in the `ct_credits` table instead of creating `credit` posts. Query functions will also need to be rewritten to query the custom table directly. I would also like to remove the individual credit ID values that are saved to the production. Instead, there should be one field on production posts that will be an array of credit ID's. This will allow for easier querying later. The credit ID can be generated as an auto-incrementing primary key in the custom table.

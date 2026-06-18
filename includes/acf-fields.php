@@ -64,7 +64,7 @@ add_action('acf/include_fields', function () {
             'type' => 'text',
             'placeholder' => 'e.g., Hamlet',
             'wrapper' => array(
-              'width' => '30',
+              'width' => '40',
             ),
           ),
           // array(
@@ -77,17 +77,6 @@ add_action('acf/include_fields', function () {
           //     'width' => '20',
           //   ),
           // ),
-          array(
-            'key' => 'field_repeater_credit_id',
-            'label' => 'Credit ID',
-            'name' => 'credit_id',
-            'type' => 'text',
-            'readonly' => true,
-            'disabled' => true,
-            'wrapper' => array(
-              'width' => '10',
-            ),
-          ),
         ),
       ),
     ),
