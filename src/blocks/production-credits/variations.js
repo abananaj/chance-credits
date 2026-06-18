@@ -4,9 +4,9 @@ import { __ } from '@wordpress/i18n';
  * Block variations for Production Credits.
  *
  * Default (no variation): all credits for the production.
- * team:    credits with role-group = playwright | director | choreographer | designer | stage_management | other
- * cast:    credits with role-group = actor
- * partner: credits with role-group = producer
+ * team:    credits with role_group = playwright | director | choreographer | designer | stage_management | other
+ * cast:    credits with role_group = actor
+ * partner: credits with role_group = producer
  */
 const variations = [
   {

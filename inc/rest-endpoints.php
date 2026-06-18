@@ -1,0 +1,301 @@
+<?php
+
+if (! defined('ABSPATH')) {
+  exit;
+}
+
+define('CHANCE_CREDITS_VALID_ROLE_GROUPS', array(
+  'playwright', 'actor', 'director', 'choreographer', 'designer', 'producer', 'other',
+));
+
+function chance_credits_editor_permission_check()
+{
+  return current_user_can('edit_posts');
+}
+
+/* -----------------------------------------------------------------------
+ * Helpers
+ * -------------------------------------------------------------------- */
+
+function chance_credits_get_row($credit_id)
+{
+  global $wpdb;
+  return $wpdb->get_row($wpdb->prepare(
+    "SELECT * FROM " . CHANCE_CREDITS_TABLE . " WHERE credit_ID = %d",
+    $credit_id
+  ));
+}
+
+function chance_credits_verify_ownership($row)
+{
+  if (! $row) {
+    return new WP_Error('not_found', 'Credit not found.', array('status' => 404));
+  }
+  if (! current_user_can('edit_post', (int) $row->credit_production)) {
+    return new WP_Error('forbidden', 'You cannot edit this credit.', array('status' => 403));
+  }
+  return true;
+}
+
+function chance_credits_format_row_for_editor($row)
+{
+  return array(
+    'id'               => (int) $row->credit_ID,
+    'artist_id'        => (int) $row->credit_artist,
+    'artist_title'     => get_the_title($row->credit_artist),
+    'artist_url'       => get_permalink($row->credit_artist),
+    'artist_thumbnail' => get_the_post_thumbnail_url($row->credit_artist) ?: '',
+    'role'             => $row->credit_role,
+    'role_group'       => $row->credit_role_group,
+    'order'            => (int) $row->credit_order,
+  );
+}
+
+/* -----------------------------------------------------------------------
+ * GET + POST /production-credits/{post_id}
+ * -------------------------------------------------------------------- */
+
+add_action('rest_api_init', function () {
+  register_rest_route('chance/v1', '/production-credits/(?P<post_id>\d+)', array(
+    array(
+      'methods'             => 'GET',
+      'callback'            => 'chance_credits_get_production_credits_callback',
+      'permission_callback' => '__return_true',
+    ),
+    array(
+      'methods'             => 'POST',
+      'callback'            => 'chance_credits_create_credit_callback',
+      'permission_callback' => 'chance_credits_editor_permission_check',
+    ),
+  ));
+});
+
+function chance_credits_get_production_credits_callback($request)
+{
+  $production_id = intval($request['post_id']);
+  $rows          = get_production_credits($production_id);
+  $output        = array_map('chance_credits_format_row_for_editor', $rows);
+
+  return new WP_REST_Response(array('credits' => $output), 200);
+}
+
+function chance_credits_create_credit_callback($request)
+{
+  global $wpdb;
+
+  $production_id = intval($request['post_id']);
+  $artist_id     = intval($request->get_param('artist'));
+  $role_group    = sanitize_text_field($request->get_param('role_group'));
+  $role          = sanitize_text_field($request->get_param('role') ?: '');
+
+  if (! in_array($role_group, CHANCE_CREDITS_VALID_ROLE_GROUPS, true)) {
+    return new WP_Error('invalid_role_group', 'Invalid role group.', array('status' => 400));
+  }
+
+  $production_post = get_post($production_id);
+  $artist_post     = get_post($artist_id);
+
+  if (! $production_post || ! $artist_post) {
+    return new WP_Error('invalid_ids', 'Production or artist not found.', array('status' => 400));
+  }
+
+  if (! current_user_can('edit_post', $production_id)) {
+    return new WP_Error('forbidden', 'You cannot add credits to this production.', array('status' => 403));
+  }
+
+  $max_order = (int) $wpdb->get_var($wpdb->prepare(
+    "SELECT MAX(credit_order) FROM " . CHANCE_CREDITS_TABLE . " WHERE credit_production = %d",
+    $production_id
+  ));
+
+  $credit_title = $production_post->post_title . ' / ' . $artist_post->post_title;
+
+  $inserted = $wpdb->insert(
+    CHANCE_CREDITS_TABLE,
+    array(
+      'credit_title'      => $credit_title,
+      'credit_name'       => sanitize_title($credit_title),
+      'credit_artist'     => $artist_id,
+      'credit_production' => $production_id,
+      'credit_role'       => $role,
+      'credit_role_group' => $role_group,
+      'credit_date'       => get_field('opening', $production_id) ?: '',
+      'credit_order'      => $max_order + 1,
+    ),
+    array('%s', '%s', '%d', '%d', '%s', '%s', '%s', '%d')
+  );
+
+  if (! $inserted) {
+    return new WP_Error('insert_failed', 'Failed to create credit.', array('status' => 500));
+  }
+
+  $new_row = chance_credits_get_row((int) $wpdb->insert_id);
+
+  return new WP_REST_Response(chance_credits_format_row_for_editor($new_row), 201);
+}
+
+/* -----------------------------------------------------------------------
+ * POST /production-credits/{post_id}/reorder
+ * -------------------------------------------------------------------- */
+
+add_action('rest_api_init', function () {
+  register_rest_route('chance/v1', '/production-credits/(?P<post_id>\d+)/reorder', array(
+    'methods'             => 'POST',
+    'callback'            => 'chance_credits_reorder_callback',
+    'permission_callback' => 'chance_credits_editor_permission_check',
+  ));
+});
+
+function chance_credits_reorder_callback($request)
+{
+  global $wpdb;
+
+  $production_id = intval($request['post_id']);
+  $order         = $request->get_param('order');
+
+  if (! current_user_can('edit_post', $production_id)) {
+    return new WP_Error('forbidden', 'You cannot reorder credits for this production.', array('status' => 403));
+  }
+
+  if (! is_array($order) || empty($order)) {
+    return new WP_Error('invalid_order', 'order must be a non-empty array.', array('status' => 400));
+  }
+
+  $ids          = array_map('intval', $order);
+  $table        = CHANCE_CREDITS_TABLE;
+  $placeholders = implode(',', array_fill(0, count($ids), '%d'));
+
+  $valid_ids = $wpdb->get_col($wpdb->prepare(
+    "SELECT credit_ID FROM $table WHERE credit_production = %d AND credit_ID IN ($placeholders)",
+    array_merge(array($production_id), $ids)
+  ));
+
+  if (count($valid_ids) !== count($ids)) {
+    return new WP_Error('invalid_ids', 'One or more IDs do not belong to this production.', array('status' => 403));
+  }
+
+  foreach ($ids as $position => $credit_id) {
+    $wpdb->update(
+      $table,
+      array('credit_order' => $position),
+      array('credit_ID'    => $credit_id),
+      array('%d'),
+      array('%d')
+    );
+  }
+
+  return new WP_REST_Response(array('success' => true), 200);
+}
+
+/* -----------------------------------------------------------------------
+ * PUT + DELETE /credit/{credit_id}
+ * -------------------------------------------------------------------- */
+
+add_action('rest_api_init', function () {
+  register_rest_route('chance/v1', '/credit/(?P<credit_id>\d+)', array(
+    array(
+      'methods'             => 'PUT',
+      'callback'            => 'chance_credits_update_credit_callback',
+      'permission_callback' => 'chance_credits_editor_permission_check',
+    ),
+    array(
+      'methods'             => 'DELETE',
+      'callback'            => 'chance_credits_delete_credit_callback',
+      'permission_callback' => 'chance_credits_editor_permission_check',
+    ),
+  ));
+});
+
+function chance_credits_update_credit_callback($request)
+{
+  global $wpdb;
+
+  $credit_id = intval($request['credit_id']);
+  $row       = chance_credits_get_row($credit_id);
+  $check     = chance_credits_verify_ownership($row);
+
+  if (is_wp_error($check)) return $check;
+
+  $role_group = sanitize_text_field($request->get_param('role_group') ?: $row->credit_role_group);
+  $role       = sanitize_text_field($request->get_param('role') ?? $row->credit_role);
+  $artist_id  = intval($request->get_param('artist') ?: $row->credit_artist);
+
+  if (! in_array($role_group, CHANCE_CREDITS_VALID_ROLE_GROUPS, true)) {
+    return new WP_Error('invalid_role_group', 'Invalid role group.', array('status' => 400));
+  }
+
+  $artist_post     = get_post($artist_id);
+  $production_post = get_post((int) $row->credit_production);
+  $credit_title    = $production_post->post_title . ' / ' . $artist_post->post_title;
+
+  $wpdb->update(
+    CHANCE_CREDITS_TABLE,
+    array(
+      'credit_title'      => $credit_title,
+      'credit_name'       => sanitize_title($credit_title),
+      'credit_artist'     => $artist_id,
+      'credit_role'       => $role,
+      'credit_role_group' => $role_group,
+    ),
+    array('credit_ID' => $credit_id),
+    array('%s', '%s', '%d', '%s', '%s'),
+    array('%d')
+  );
+
+  return new WP_REST_Response(chance_credits_format_row_for_editor(chance_credits_get_row($credit_id)), 200);
+}
+
+function chance_credits_delete_credit_callback($request)
+{
+  global $wpdb;
+
+  $credit_id = intval($request['credit_id']);
+  $row       = chance_credits_get_row($credit_id);
+  $check     = chance_credits_verify_ownership($row);
+
+  if (is_wp_error($check)) return $check;
+
+  $deleted = $wpdb->delete(
+    CHANCE_CREDITS_TABLE,
+    array('credit_ID' => $credit_id),
+    array('%d')
+  );
+
+  if (! $deleted) {
+    return new WP_Error('delete_failed', 'Failed to delete credit.', array('status' => 500));
+  }
+
+  return new WP_REST_Response(array('deleted' => true, 'id' => $credit_id), 200);
+}
+
+/* -----------------------------------------------------------------------
+ * GET /artist-credits/{post_id}
+ * -------------------------------------------------------------------- */
+
+add_action('rest_api_init', function () {
+  register_rest_route('chance/v1', '/artist-credits/(?P<post_id>\d+)', array(
+    'methods'             => 'GET',
+    'callback'            => 'chance_credits_get_artist_credits_callback',
+    'permission_callback' => '__return_true',
+  ));
+});
+
+function chance_credits_get_artist_credits_callback($request)
+{
+  $artist_id = intval($request['post_id']);
+  $rows      = get_artist_productions($artist_id);
+  $output    = array();
+
+  foreach ($rows as $row) {
+    $year     = $row->credit_date ? date('Y', strtotime($row->credit_date)) : '';
+    $output[] = array(
+      'id'               => (int) $row->credit_ID,
+      'production_title' => get_the_title($row->credit_production),
+      'production_url'   => get_permalink($row->credit_production),
+      'role'             => $row->credit_role ?: $row->credit_role_group,
+      'date'             => $year,
+    );
+  }
+
+  return new WP_REST_Response(array('credits' => $output), 200);
+}

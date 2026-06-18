@@ -8,7 +8,7 @@
  * the migrated data.
  *
  * Run via WP-CLI from wp_root:
- *   wp eval-file wp-content/mu-plugins/chance-credits/includes/populate-repeaters.php
+ *   wp eval-file wp-content/mu-plugins/chance-credits/inc/populate-repeaters.php
  *
  * Set $dry_run = false to actually write repeater data.
  */
@@ -69,7 +69,7 @@ foreach ($production_ids as $production_id) {
   foreach ($rows as $row) {
     $repeater_rows[] = array(
       'artist'     => (int) $row->credit_artist,
-      'role-group' => $row->credit_role_group,
+      'role_group' => $row->credit_role_group,
       'role'       => $row->credit_role,
     );
   }

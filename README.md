@@ -30,14 +30,14 @@ Applied to: `production` posts
 **Repeater Field: `production_credits_repeater`**
 
 - `artist` (Post Object) - Link to artist
-- `role-group` (Select) - playwright, actor, director, choreographer, designer, producer, other
+- `role_group` (Select) - playwright, actor, director, choreographer, designer, producer, other
 - `role` (Text) - Specific role (e.g., "Hamlet", "Stage Manager")
 
 When you save, a `credit` post is automatically created with these meta fields:
 
 - `production` (post ID)
 - `artist` (post ID)
-- `role-group` (string)
+- `role_group` (string)
 - `role` (string)
 
 ## Query Functions
@@ -68,7 +68,7 @@ $credits = get_credits_by_group($production_id);
 
 **Query Arguments:**
 
-- `role_group` (string) - Filter by role-group
+- `role_group` (string) - Filter by role_group
 - `orderby` (string) - Default: 'menu_order title'
 - `order` (string) - ASC or DESC
 - `per_page` (int) - Default: 200
@@ -83,9 +83,9 @@ Two custom Gutenberg blocks available:
 
 - **Name**: `chance-credits/production-credits`
 - **Used on**: Production pages
-- **Displays**: Cast and crew organized by role-group
+- **Displays**: Cast and crew organized by role_group
 - **Context**: Uses `postId` and `postType` from block context
-- **Attribute**: `groupBy` (filter by specific role-group)
+- **Attribute**: `groupBy` (filter by specific role_group)
 
 ### Artist Productions Block
 
@@ -102,7 +102,7 @@ chance-credits/
 ├── chance-credits.php              # Main plugin file
 ├── models/
 │   └── credits.php                 # All query functions & auto-sync
-├── includes/
+├── inc/
 │   ├── acf-fields.php              # ACF field group registration
 │   └── blocks.php                  # Block registration
 └── blocks/
@@ -129,7 +129,7 @@ This plugin is designed to be extensible. Additional blocks can be added by:
 
 1. Creating new folder in `blocks/`
 2. Adding `block.json`, `render.php`, `index.js`
-3. Registering in `includes/blocks.php`
+3. Registering in `inc/blocks.php`
 
 Possible additions:
 
@@ -152,15 +152,19 @@ Possible additions:
 - Credits are deleted permanently if removed from repeater
 
 # CUSTOM SQL TABLE REFACTORING
+
 Move this credit data to a custom table called `ct_credits`. All existing meta fields should be stored as columns instead. For example, columns could be:
-  - `credit_ID` (primary key, auto-increment)
-  - `credit_title` (Artist Name/Production Name, auto-generated from the title of the artist and production, with a "/" separator, e.g. "Hamlet/John Doe")
-  - `credit_name` (sanitized title, may not be necessary because credits are not shown on the front end as individual posts, but it may be useful for debugging and data management)
-  - `credit_artist` (artist ID, from the post_ID of the selected artist in the repeater)
-  - `credit_production` (production ID, auto add production ID from which the credit is created)
-  - `credit_role` (string, input by user in repeater)
-  - `credit_role_group` (string, input by user in repeater)
-  - `credit_opening` (date, equal to production opening meta value)
-  - `credit_order` (number, may not be necessary if production can have a field that is an array of credit_IDs that dictates the order in which they appear. The user should be able to easily change this order using the repeater field. Order is not needed for querying from artist block, those should be ordered by production opening date instead)
+
+- `credit_ID` (primary key, auto-increment)
+- `credit_title` (Artist Name/Production Name, auto-generated from the title of the artist and production, with a "/" separator, e.g. "Hamlet/John Doe")
+- `credit_name` (sanitized title, may not be necessary because credits are not shown on the front end as individual posts, but it may be useful for debugging and data management)
+- `credit_artist` (`artist` or `supporter` post_ID, from the post_ID of the selected artist OR supporter in the repeater)
+- `credit_production` (production ID, auto add production ID from which the credit is created)
+- `credit_role` (string, input by user in repeater)
+- `credit_role_alt` (string, input by user in repeater, optional)
+- `credit_role_group` (string, input by user in repeater)
+- `credit_opening` (date, equal to production opening meta value)
+- `credit_order` (number, may not be necessary if production can have a field that is an array of credit_IDs that dictates the order in which they appear. The user should be able to easily change this order using the repeater field. Order is not needed for querying from artist block, those should be ordered by production opening date instead)
 
 This will improve query performance and simplify data management. The plugin should be refactored to use this custom table instead of post meta for credits. The auto-sync function will need to be updated to insert/update/delete rows in the `ct_credits` table instead of creating `credit` posts. Query functions will also need to be rewritten to query the custom table directly. I would also like to remove the individual credit ID values that are saved to the production. Instead, there should be one field on production posts that will be an array of credit ID's. This will allow for easier querying later. The credit ID can be generated as an auto-incrementing primary key in the custom table.
+

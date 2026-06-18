@@ -1,0 +1,15 @@
+{
+  "name": "chance-credits",
+  "version": "1.0.0",
+  "scripts": {
+    "build:blocks": "wp-scripts build",
+    "build:manager": "webpack --config webpack.credits-manager.js",
+    "build": "npm run build:blocks && npm run build:manager",
+    "start:blocks": "wp-scripts start",
+    "start:manager": "webpack --config webpack.credits-manager.js --watch --mode development"
+  },
+  "devDependencies": {
+    "@babel/runtime": "^7.0.0",
+    "@wordpress/scripts": "^29.0.0"
+  }
+}
